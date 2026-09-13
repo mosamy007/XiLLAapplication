@@ -132,20 +132,26 @@ export default function Hero({ onJoinClick }) {
             href="https://opensea.io/collection/web3-cat"
             target="_blank"
             rel="noreferrer"
-            className="text-neon-cyan hover:underline flex items-center gap-0.5 font-bold"
+            title="Contract: 0xe1f0f12725cfecdeb2e9b07fc5b25906fc7597b3 (Robinhood)"
+            className="text-neon-cyan hover:underline flex items-center gap-1.5 font-bold"
           >
-            <span>Web3 Cats ({web3CatHolders.toLocaleString()})</span>
-            <ExternalLink className="w-2.5 h-2.5" />
+            <span>Web3 Cats</span>
+            <span className="text-[8px] sm:text-[9px] text-gray-300 bg-cyber-dark px-1 py-0.5 border border-gray-700 font-pixel">Robinhood</span>
+            <span className="text-white">({web3CatHolders.toLocaleString()})</span>
+            <ExternalLink className="w-2.5 h-2.5 text-gray-400" />
           </a>
           <span className="text-gray-600 font-bold">|</span>
           <a
             href="https://opensea.io/collection/miggles-on-base"
             target="_blank"
             rel="noreferrer"
-            className="text-neon-cyan hover:underline flex items-center gap-0.5 font-bold"
+            title="Contract: 0x71cfbebb61a42d2e5ccff0831663cd58d2e442d9 (Base)"
+            className="text-neon-cyan hover:underline flex items-center gap-1.5 font-bold"
           >
-            <span>Miggles on Base ({migglesHolders.toLocaleString()})</span>
-            <ExternalLink className="w-2.5 h-2.5" />
+            <span>Miggles</span>
+            <span className="text-[8px] sm:text-[9px] text-neon-cyan bg-neon-cyan/10 px-1 py-0.5 border border-neon-cyan/40 font-pixel">Base</span>
+            <span className="text-white">({migglesHolders.toLocaleString()})</span>
+            <ExternalLink className="w-2.5 h-2.5 text-gray-400" />
           </a>
         </div>
 

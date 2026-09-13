@@ -48,11 +48,13 @@ app.get('/api/config', async (req, res) => {
   let migglesHolders = cfg.migglesHolders || 1778;
   let holderSpotsTaken = web3CatHolders + migglesHolders;
 
+  let collections = openseaService.MONITORED_COLLECTIONS;
   try {
     const liveStats = await openseaService.getLiveHolders();
     if (liveStats.web3CatHolders) web3CatHolders = liveStats.web3CatHolders;
     if (liveStats.migglesHolders) migglesHolders = liveStats.migglesHolders;
     if (liveStats.holderSpotsTaken) holderSpotsTaken = liveStats.holderSpotsTaken;
+    if (liveStats.collections) collections = liveStats.collections;
   } catch (err) {
     console.warn('[XiLLA] OpenSea sync fallback:', err.message);
   }
@@ -74,6 +76,7 @@ app.get('/api/config', async (req, res) => {
     holderSpotsTaken,
     web3CatHolders,
     migglesHolders,
+    collections,
     registeredSurvivors, // Live count of registered users ("Survivors")
     siteClaimed: registeredSurvivors,
     spotsTaken,
