@@ -10,9 +10,11 @@ dist-ssr/
 
 # Environment variables & secrets (CRITICAL for GitHub safety)
 .env
+.env*
 .env.local
 .env.production
 .env.*.local
+!.env.example
 
 # Logs
 npm-debug.log*
