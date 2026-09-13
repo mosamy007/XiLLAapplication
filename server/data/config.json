@@ -1,0 +1,63 @@
+{
+  "wlTotal": 5333,
+  "web3CatHolders": 1059,
+  "migglesHolders": 1777,
+  "holderSpotsTaken": 2836,
+  "wlRemaining": 2497,
+  "eventName": "XiLLA HAS AWAKENED",
+  "officialXUrl": "https://x.com/XiLLANFTs",
+  "collections": [
+    {
+      "name": "Web3 Cats",
+      "url": "https://opensea.io/collection/web3-cat",
+      "holders": 1059,
+      "chain": "Robinhood"
+    },
+    {
+      "name": "Miggles on Base",
+      "url": "https://opensea.io/collection/miggles-on-base",
+      "holders": 1777,
+      "chain": "Base"
+    }
+  ],
+  "links": {
+    "opensea": "",
+    "discord": "",
+    "twitter": "https://x.com/XiLLANFTs",
+    "telegram": ""
+  },
+  "stages": [
+    {
+      "id": "stage_1",
+      "stageNumber": 1,
+      "title": "SIGNAL DETECTED",
+      "status": "COMPLETE",
+      "desc": "Deep subterranean pulse confirmed by city sensors. Emergency protocol activated.",
+      "active": true
+    },
+    {
+      "id": "stage_2",
+      "stageNumber": 2,
+      "title": "CITY AWAKENS",
+      "status": "CURRENT PHASE",
+      "desc": "XiLLA City opens for survivor recon. Missions initiated, WL leaderboard live.",
+      "active": true
+    },
+    {
+      "id": "stage_3",
+      "stageNumber": 3,
+      "title": "SURVIVORS ASSEMBLE",
+      "status": "UPCOMING",
+      "desc": "Final WL slots locked. Tactical wallet verification completed across all districts.",
+      "active": true
+    },
+    {
+      "id": "stage_4",
+      "stageNumber": 4,
+      "title": "XiLLA ARRIVES",
+      "status": "FINAL PROTOCOL",
+      "desc": "The official generation event. Survivors mint their pixel Kaiju operatives.",
+      "active": true
+    }
+  ]
+}

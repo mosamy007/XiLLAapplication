@@ -1,0 +1,228 @@
+/* ===================================================
+   XiLLA ARCADE & PIXEL DESIGN SYSTEM
+   =================================================== */
+
+:root {
+  --neon-cyan: #00F3FF;
+  --neon-pink: #FF007A;
+  --neon-green: #00FF66;
+  --neon-yellow: #FFE600;
+  --danger-red: #FF2A4B;
+  --kaiju-purple: #A020F0;
+  --cyber-dark: #060a17;
+  --cyber-panel: #0a0f22;
+}
+
+/* CRT Scanlines Overlay */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%, 
+    rgba(0, 0, 0, 0.25) 50%
+  ), linear-gradient(
+    90deg,
+    rgba(255, 0, 0, 0.03),
+    rgba(0, 255, 0, 0.01),
+    rgba(0, 0, 255, 0.03)
+  );
+  background-size: 100% 3px, 6px 100%;
+  opacity: 0.75;
+}
+
+/* Subtle Screen Vignette */
+.crt-vignette {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9998;
+  box-shadow: inset 0 0 100px rgba(0, 0, 0, 0.85);
+}
+
+/* Pixel Border Panels */
+.pixel-panel {
+  border: 3px solid #00F3FF;
+  box-shadow: 4px 4px 0px #000000;
+  background-color: rgba(10, 15, 34, 0.95);
+  position: relative;
+}
+
+.pixel-panel-pink {
+  border: 3px solid #FF007A;
+  box-shadow: 4px 4px 0px #000000;
+  background-color: rgba(10, 15, 34, 0.95);
+}
+
+.pixel-panel-yellow {
+  border: 3px solid #FFE600;
+  box-shadow: 4px 4px 0px #000000;
+  background-color: rgba(10, 15, 34, 0.95);
+}
+
+.pixel-panel-purple {
+  border: 3px solid #A020F0;
+  box-shadow: 4px 4px 0px #000000;
+  background-color: rgba(10, 15, 34, 0.95);
+}
+
+.pixel-panel-red {
+  border: 3px solid #FF2A4B;
+  box-shadow: 4px 4px 0px #000000;
+  background-color: rgba(10, 15, 34, 0.95);
+}
+
+/* Pixel Corner Accents */
+.pixel-corners {
+  position: relative;
+}
+.pixel-corners::before,
+.pixel-corners::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background-color: #00F3FF;
+}
+.pixel-corners::before {
+  top: -3px;
+  left: -3px;
+}
+.pixel-corners::after {
+  bottom: -3px;
+  right: -3px;
+}
+
+/* Pixel Arcade Buttons */
+.pixel-btn {
+  font-family: 'Press Start 2P', cursive;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1.5rem;
+  border: 3px solid #00F3FF;
+  background-color: #00F3FF;
+  color: #04060d;
+  box-shadow: 4px 4px 0px #000000;
+  transition: transform 0.05s ease, box-shadow 0.05s ease, filter 0.1s ease;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  user-select: none;
+}
+
+.pixel-btn:hover {
+  filter: brightness(1.15);
+  box-shadow: 4px 4px 0px #000000, 0 0 12px rgba(0, 243, 255, 0.6);
+}
+
+.pixel-btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.pixel-btn-pink {
+  border-color: #FF007A;
+  background-color: #FF007A;
+  color: #ffffff;
+}
+.pixel-btn-pink:hover {
+  box-shadow: 4px 4px 0px #000000, 0 0 12px rgba(255, 0, 122, 0.6);
+}
+
+.pixel-btn-yellow {
+  border-color: #FFE600;
+  background-color: #FFE600;
+  color: #04060d;
+}
+.pixel-btn-yellow:hover {
+  box-shadow: 4px 4px 0px #000000, 0 0 12px rgba(255, 230, 0, 0.6);
+}
+
+.pixel-btn-outline {
+  background-color: transparent;
+  color: #00F3FF;
+}
+.pixel-btn-outline:hover {
+  background-color: rgba(0, 243, 255, 0.15);
+  color: #ffffff;
+}
+
+/* Glowing Arcade Titles */
+.glow-text-cyan {
+  text-shadow: 0 0 8px rgba(0, 243, 255, 0.7), 0 0 20px rgba(0, 243, 255, 0.4);
+}
+
+.glow-text-pink {
+  text-shadow: 0 0 8px rgba(255, 0, 122, 0.7), 0 0 20px rgba(255, 0, 122, 0.4);
+}
+
+.glow-text-yellow {
+  text-shadow: 0 0 8px rgba(255, 230, 0, 0.7), 0 0 20px rgba(255, 230, 0, 0.4);
+}
+
+/* Custom Pixel Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #060a17;
+  border-left: 2px solid #00F3FF;
+}
+::-webkit-scrollbar-thumb {
+  background: #00F3FF;
+  box-shadow: inset 1px 1px 0px #ffffff;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #FF007A;
+}
+
+/* Flickering Neon Lights */
+@keyframes neonFlicker {
+  0%, 19.999%, 22%, 62.999%, 64%, 64.999%, 70%, 100% {
+    opacity: 1;
+    filter: drop-shadow(0 0 8px #FF007A);
+  }
+  20%, 21.999%, 63%, 63.999%, 65%, 69.999% {
+    opacity: 0.35;
+    filter: none;
+  }
+}
+
+.flicker-neon {
+  animation: neonFlicker 4s infinite;
+}
+
+/* Radar Pulse Marker */
+@keyframes radarPing {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.radar-pulse::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  animation: radarPing 2s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
