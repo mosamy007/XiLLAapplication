@@ -4,7 +4,7 @@ import { useAudio } from '../context/AudioContext';
 import { Play, Shield, ExternalLink, Users } from 'lucide-react';
 
 export default function Hero({ onJoinClick }) {
-  const { spotsRemaining, totalSpots, registeredSurvivors, requireIdentity } = useGame();
+  const { spotsRemaining, totalSpots, holderSpotsTaken, registeredSurvivors, projectConfig, requireIdentity } = useGame();
   const { playLaser } = useAudio();
 
   const handleJoinWL = () => {
@@ -20,10 +20,14 @@ export default function Hero({ onJoinClick }) {
   };
 
   const total = totalSpots || 5333;
-  const remaining = spotsRemaining !== undefined ? spotsRemaining : 2497;
+  const remaining = spotsRemaining !== undefined ? spotsRemaining : 2421;
   const spotsTaken = Math.min(total, total - remaining);
   const percentageTaken = Math.min(100, Math.max(0, (spotsTaken / total) * 100));
   const survivorsCount = registeredSurvivors || 0;
+
+  const web3CatHolders = projectConfig?.web3CatHolders || 1134;
+  const migglesHolders = projectConfig?.migglesHolders || 1778;
+  const liveHolderSpots = holderSpotsTaken || (web3CatHolders + migglesHolders);
 
   return (
     <section 
@@ -118,11 +122,11 @@ export default function Hero({ onJoinClick }) {
           </div>
         </div>
 
-        {/* Real OpenSea Holder Spots Badge */}
+        {/* Real OpenSea Live Holder Spots Badge */}
         <div className="p-2 sm:p-2.5 bg-cyber-black/85 border-2 border-neon-cyan/50 backdrop-blur-md flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-tech text-gray-200 shadow-pixel-dark">
           <span className="flex items-center gap-1.5 text-neon-yellow font-bold">
             <Shield className="w-3.5 h-3.5 text-neon-yellow shrink-0" />
-            <span>2,836 SPOTS TAKEN BY HOLDERS:</span>
+            <span>{liveHolderSpots.toLocaleString()} SPOTS TAKEN BY HOLDERS:</span>
           </span>
           <a
             href="https://opensea.io/collection/web3-cat"
@@ -130,7 +134,7 @@ export default function Hero({ onJoinClick }) {
             rel="noreferrer"
             className="text-neon-cyan hover:underline flex items-center gap-0.5 font-bold"
           >
-            <span>Web3 Cats (1,059)</span>
+            <span>Web3 Cats ({web3CatHolders.toLocaleString()})</span>
             <ExternalLink className="w-2.5 h-2.5" />
           </a>
           <span className="text-gray-600 font-bold">|</span>
@@ -140,7 +144,7 @@ export default function Hero({ onJoinClick }) {
             rel="noreferrer"
             className="text-neon-cyan hover:underline flex items-center gap-0.5 font-bold"
           >
-            <span>Miggles on Base (1,777)</span>
+            <span>Miggles on Base ({migglesHolders.toLocaleString()})</span>
             <ExternalLink className="w-2.5 h-2.5" />
           </a>
         </div>

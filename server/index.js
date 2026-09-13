@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { db } from './db.js';
 import { verifyTwitterFollow, verifyTwitterTask } from './twitterService.js';
+import openseaService from './openseaService.js';
 
 dotenv.config();
 
@@ -37,18 +38,26 @@ function adminAuth(req, res, next) {
 // PUBLIC API ROUTES
 // ==========================================
 
-// 1. Get Project Config & Real OpenSea Holder Counts
-app.get('/api/config', (req, res) => {
+// 1. Get Project Config & Real OpenSea Holder Counts (Live via OpenSea API)
+app.get('/api/config', async (req, res) => {
   const cfg = db.getConfig();
   const submissions = db.getSubmissions();
   
-  // Real OpenSea collection holder counts:
-  // Web3 Cats (Robinhood): 1,059
-  // Miggles on Base: 1,777
-  // Total holders reserved: 2,836
-  // Total supply: 5,333
+  // Query OpenSea Live Radar
+  let web3CatHolders = cfg.web3CatHolders || 1134;
+  let migglesHolders = cfg.migglesHolders || 1778;
+  let holderSpotsTaken = web3CatHolders + migglesHolders;
+
+  try {
+    const liveStats = await openseaService.getLiveHolders();
+    if (liveStats.web3CatHolders) web3CatHolders = liveStats.web3CatHolders;
+    if (liveStats.migglesHolders) migglesHolders = liveStats.migglesHolders;
+    if (liveStats.holderSpotsTaken) holderSpotsTaken = liveStats.holderSpotsTaken;
+  } catch (err) {
+    console.warn('[XiLLA] OpenSea sync fallback:', err.message);
+  }
+
   const total = cfg.wlTotal || 5333;
-  const holderSpotsTaken = (cfg.web3CatHolders || 1059) + (cfg.migglesHolders || 1777);
   
   // Registered survivors: ONLY those who actually submitted their WL registration!
   const registeredSurvivors = submissions.filter(
@@ -63,8 +72,8 @@ app.get('/api/config', (req, res) => {
     ...cfg,
     wlTotal: total,
     holderSpotsTaken,
-    web3CatHolders: cfg.web3CatHolders || 1059,
-    migglesHolders: cfg.migglesHolders || 1777,
+    web3CatHolders,
+    migglesHolders,
     registeredSurvivors, // Live count of registered users ("Survivors")
     siteClaimed: registeredSurvivors,
     spotsTaken,
@@ -399,12 +408,23 @@ app.post('/api/admin/reset-all', (req, res) => {
   });
 });
 
-app.get('/api/admin/stats', adminAuth, (req, res) => {
+app.get('/api/admin/stats', adminAuth, async (req, res) => {
   const submissions = db.getSubmissions();
   // Filter strictly to submitted WL users
   const registeredSubs = submissions.filter(s => s.isRegistered === true || s.status === 'WL_QUALIFIED');
   const tasks = db.getTasks();
   const totalXP = submissions.reduce((acc, s) => acc + (s.xp || 0), 0);
+
+  let web3CatHolders = 1134;
+  let migglesHolders = 1778;
+  let holderSpotsTaken = 2912;
+
+  try {
+    const liveStats = await openseaService.getLiveHolders();
+    if (liveStats.web3CatHolders) web3CatHolders = liveStats.web3CatHolders;
+    if (liveStats.migglesHolders) migglesHolders = liveStats.migglesHolders;
+    if (liveStats.holderSpotsTaken) holderSpotsTaken = liveStats.holderSpotsTaken;
+  } catch (err) {}
   
   res.json({
     totalSubmissions: registeredSubs.length,
@@ -412,9 +432,9 @@ app.get('/api/admin/stats', adminAuth, (req, res) => {
     totalTasks: tasks.length,
     activeTasks: tasks.filter(t => t.active !== false).length,
     totalXPDistributed: totalXP,
-    web3CatHolders: 1059,
-    migglesHolders: 1777,
-    holderSpotsTaken: 2836,
+    web3CatHolders,
+    migglesHolders,
+    holderSpotsTaken,
     lastSubmission: registeredSubs[0] || null,
   });
 });
