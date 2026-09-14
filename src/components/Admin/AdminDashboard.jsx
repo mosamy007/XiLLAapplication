@@ -320,7 +320,7 @@ export default function AdminDashboard({ adminToken, onLogout }) {
                 setIsResetModalOpen(true);
               }}
               className="pixel-btn bg-danger-red/15 border border-danger-red text-danger-red hover:bg-danger-red hover:text-white text-[10px] py-2 px-3 flex items-center gap-1.5 shadow-[0_0_8px_rgba(255,0,51,0.3)] transition-all cursor-pointer"
-              title="Factory reset leaderboard and stats to 2,836 reserved spots"
+              title="Factory reset leaderboard and stats to reserved spots (Holders + 300 Team spots)"
             >
               <Trash2 className="w-3.5 h-3.5" />
               <span>RESET LEADERBOARD</span>
@@ -377,9 +377,9 @@ export default function AdminDashboard({ adminToken, onLogout }) {
               <Users className="w-4 h-4 text-neon-green" />
             </div>
             <div className="font-pixel text-xl text-neon-green">
-              {Math.max(0, 5333 - 2836 - (stats.totalSubmissions || submissions.length)).toLocaleString()}
+              {Math.max(0, 5333 - (stats.holderSpotsTaken || 2836) - (stats.teamReservedSpots || 300) - (stats.totalSubmissions || submissions.length)).toLocaleString()}
             </div>
-            <p className="text-[11px] text-gray-500 mt-1">Out of 5,333 (2,836 reserved for holders)</p>
+            <p className="text-[11px] text-gray-500 mt-1">Out of 5,333 (Holders + 300 Team reserved)</p>
           </div>
         </div>
 

@@ -60,6 +60,8 @@ app.get('/api/config', async (req, res) => {
   }
 
   const total = cfg.wlTotal || 5333;
+  const teamReservedSpots = cfg.teamReservedSpots !== undefined ? cfg.teamReservedSpots : 300;
+  const totalReservedSpots = holderSpotsTaken + teamReservedSpots;
   
   // Registered survivors: ONLY those who actually submitted their WL registration!
   const registeredSurvivors = submissions.filter(
@@ -67,7 +69,7 @@ app.get('/api/config', async (req, res) => {
   ).length;
 
   // Live spots taken: capped at total (5,333)
-  const spotsTaken = Math.min(total, holderSpotsTaken + registeredSurvivors);
+  const spotsTaken = Math.min(total, totalReservedSpots + registeredSurvivors);
   const remaining = Math.max(0, total - spotsTaken);
   
   res.json({
@@ -76,6 +78,8 @@ app.get('/api/config', async (req, res) => {
     holderSpotsTaken,
     web3CatHolders,
     migglesHolders,
+    teamReservedSpots,
+    totalReservedSpots,
     collections,
     registeredSurvivors, // Live count of registered users ("Survivors")
     siteClaimed: registeredSurvivors,
@@ -390,7 +394,7 @@ app.post('/api/admin/reset-all', (req, res) => {
   // 1. Wipe all submissions to start 100% clean
   db.saveSubmissions([]);
 
-  // 2. Reset config baseline to exactly 2,836 reserved holder spots
+  // 2. Reset config baseline to reserved spots (2,836 holder + 300 team = 3,136 reserved)
   const cfg = db.getConfig();
   const resetCfg = {
     ...cfg,
@@ -398,15 +402,16 @@ app.post('/api/admin/reset-all', (req, res) => {
     web3CatHolders: 1059,
     migglesHolders: 1777,
     holderSpotsTaken: 2836,
-    wlRemaining: 2497,
+    teamReservedSpots: 300,
+    wlRemaining: 2197,
   };
   db.saveConfig(resetCfg);
 
-  console.log('[XiLLA Admin] FACTORY RESET EXECUTED: All submissions purged. Baseline set to 2,836 reserved spots.');
+  console.log('[XiLLA Admin] FACTORY RESET EXECUTED: All submissions purged. Baseline set to 2,836 reserved holder spots + 300 team spots.');
 
   res.json({
     success: true,
-    message: 'FACTORY RESET COMPLETE: Leaderboard purged. All users cleared. Baseline set to 2,836 reserved holder spots (2,497 remaining).',
+    message: 'FACTORY RESET COMPLETE: Leaderboard purged. All users cleared. Baseline set to 2,836 holder spots + 300 team spots (2,197 remaining).',
     config: resetCfg,
   });
 });
@@ -428,6 +433,10 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     if (liveStats.migglesHolders) migglesHolders = liveStats.migglesHolders;
     if (liveStats.holderSpotsTaken) holderSpotsTaken = liveStats.holderSpotsTaken;
   } catch (err) {}
+
+  const cfg = db.getConfig();
+  const teamReservedSpots = cfg.teamReservedSpots !== undefined ? cfg.teamReservedSpots : 300;
+  const totalReservedSpots = holderSpotsTaken + teamReservedSpots;
   
   res.json({
     totalSubmissions: registeredSubs.length,
@@ -438,6 +447,8 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     web3CatHolders,
     migglesHolders,
     holderSpotsTaken,
+    teamReservedSpots,
+    totalReservedSpots,
     lastSubmission: registeredSubs[0] || null,
   });
 });

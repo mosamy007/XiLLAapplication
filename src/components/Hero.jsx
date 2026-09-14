@@ -4,7 +4,7 @@ import { useAudio } from '../context/AudioContext';
 import { Play, Shield, ExternalLink, Users } from 'lucide-react';
 
 export default function Hero({ onJoinClick }) {
-  const { spotsRemaining, totalSpots, holderSpotsTaken, registeredSurvivors, projectConfig, requireIdentity } = useGame();
+  const { spotsRemaining, totalSpots, holderSpotsTaken, teamReservedSpots: gameTeamSpots, registeredSurvivors, projectConfig, requireIdentity } = useGame();
   const { playLaser } = useAudio();
 
   const handleJoinWL = () => {
@@ -20,7 +20,10 @@ export default function Hero({ onJoinClick }) {
   };
 
   const total = totalSpots || 5333;
-  const remaining = spotsRemaining !== undefined ? spotsRemaining : 2421;
+  const teamReservedSpots = projectConfig?.teamReservedSpots !== undefined 
+    ? projectConfig.teamReservedSpots 
+    : (gameTeamSpots !== undefined ? gameTeamSpots : 300);
+  const remaining = spotsRemaining !== undefined ? spotsRemaining : 2121;
   const spotsTaken = Math.min(total, total - remaining);
   const percentageTaken = Math.min(100, Math.max(0, (spotsTaken / total) * 100));
   const survivorsCount = registeredSurvivors || 0;
@@ -153,6 +156,13 @@ export default function Hero({ onJoinClick }) {
             <span className="text-white">({migglesHolders.toLocaleString()})</span>
             <ExternalLink className="w-2.5 h-2.5 text-gray-400" />
           </a>
+          <span className="text-gray-600 font-bold">|</span>
+          <span className="flex items-center gap-1.5 text-neon-pink font-bold">
+            <span>TEAM ALLOCATION:</span>
+            <span className="text-white bg-neon-pink/20 px-1.5 py-0.5 border border-neon-pink/50 font-pixel text-[9px]">
+              {teamReservedSpots.toLocaleString()}
+            </span>
+          </span>
         </div>
 
       </div>

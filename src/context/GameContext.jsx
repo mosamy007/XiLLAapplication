@@ -68,9 +68,10 @@ export function GameProvider({ children }) {
   const [executionMessage, setExecutionMessage] = useState(null);
 
   // Real supply & holder allocation
-  const [spotsRemaining, setSpotsRemaining] = useState(2497);
+  const [spotsRemaining, setSpotsRemaining] = useState(2197);
   const [totalSpots, setTotalSpots] = useState(5333);
   const [holderSpotsTaken, setHolderSpotsTaken] = useState(2836);
+  const [teamReservedSpots, setTeamReservedSpots] = useState(300);
   const [registeredSurvivors, setRegisteredSurvivors] = useState(0);
   const [projectConfig, setProjectConfig] = useState(null);
 
@@ -106,6 +107,7 @@ export function GameProvider({ children }) {
         if (data.wlRemaining !== undefined) setSpotsRemaining(data.wlRemaining);
         if (data.wlTotal !== undefined) setTotalSpots(data.wlTotal);
         if (data.holderSpotsTaken !== undefined) setHolderSpotsTaken(data.holderSpotsTaken);
+        if (data.teamReservedSpots !== undefined) setTeamReservedSpots(data.teamReservedSpots);
         if (data.registeredSurvivors !== undefined) setRegisteredSurvivors(data.registeredSurvivors);
       }
     } catch (e) {}
@@ -469,6 +471,7 @@ export function GameProvider({ children }) {
         spotsRemaining,
         totalSpots,
         holderSpotsTaken,
+        teamReservedSpots,
         registeredSurvivors,
         requireIdentity,
         isIdentityModalOpen,
