@@ -1,15 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { useGame } from '../context/GameContext';
 import { useAudio } from '../context/AudioContext';
-import { AlertTriangle, Radio } from 'lucide-react';
+import { Radio } from 'lucide-react';
 
 export default function BootSequence() {
   const { showBootSequence, skipBootSequence } = useGame();
-  const { playBlip, playLaser, playVictory, playWarning } = useAudio();
+  const { playBlip, playLaser, playVictory } = useAudio();
   const [step, setStep] = useState(0);
 
   useEffect(() => {
     if (!showBootSequence) return;
+
+    // Immediately mark as seen so page reloads during the sequence won't re-trigger it
+    try {
+      localStorage.setItem('xilla_boot_seen', 'true');
+    } catch (e) {}
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' || e.code === 'Space') {
@@ -18,14 +23,13 @@ export default function BootSequence() {
     };
     window.addEventListener('keydown', handleKeyDown);
 
-    // Sequence timeline
+    // Sequence timeline (Warning removed, streamlined Kaiju awakening sequence)
     const timers = [
-      setTimeout(() => { setStep(1); playBlip(300); }, 600),
-      setTimeout(() => { setStep(2); playBlip(450); }, 1400),
-      setTimeout(() => { setStep(3); playWarning(); }, 2200),
-      setTimeout(() => { setStep(4); playLaser(); }, 3200),
-      setTimeout(() => { setStep(5); playVictory(); }, 4200),
-      setTimeout(() => { skipBootSequence(); }, 5600),
+      setTimeout(() => { setStep(1); playBlip(300); }, 500),
+      setTimeout(() => { setStep(2); playBlip(450); }, 1300),
+      setTimeout(() => { setStep(3); playLaser(); }, 2200),
+      setTimeout(() => { setStep(4); playVictory(); }, 3200),
+      setTimeout(() => { skipBootSequence(); }, 4400),
     ];
 
     return () => {
@@ -65,13 +69,6 @@ export default function BootSequence() {
         )}
 
         {step >= 3 && (
-          <div className="flex items-center justify-center gap-2 p-3 bg-danger-red/20 border-2 border-danger-red text-danger-red font-pixel text-xs tracking-widest mb-8 animate-flicker">
-            <AlertTriangle className="w-5 h-5 animate-bounce" />
-            <span>WARNING: UNKNOWN ENTITY DETECTED</span>
-          </div>
-        )}
-
-        {step >= 4 && (
           <div className="space-y-3 transform transition-transform duration-500 scale-105">
             <h1 className="font-pixel text-4xl sm:text-6xl text-neon-cyan glow-text-cyan tracking-wider">
               XiLLA
@@ -82,7 +79,7 @@ export default function BootSequence() {
           </div>
         )}
 
-        {step >= 5 && (
+        {step >= 4 && (
           <p className="font-tech text-xs sm:text-sm text-neon-yellow tracking-widest mt-8 animate-pulse">
             INITIALIZING SURVIVOR DEFENSE PROTOCOLS...
           </p>

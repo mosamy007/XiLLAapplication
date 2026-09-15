@@ -23,8 +23,14 @@ export function GameProvider({ children }) {
   // ALL STATE DECLARATIONS AT TOP OF COMPONENT (PREVENTS TDZ)
   // ============================================================
 
-  // Boot sequence state - shows up whenever loading or reloading the website
-  const [showBootSequence, setShowBootSequence] = useState(true);
+  // Boot sequence state - shown once on first visit, not on every page reload
+  const [showBootSequence, setShowBootSequence] = useState(() => {
+    try {
+      return !localStorage.getItem('xilla_boot_seen');
+    } catch (e) {
+      return false;
+    }
+  });
 
   // User identity (X handle, Wallet, XP, Tasks) - ISOLATED PER HANDLE
   const [handle, setHandle] = useState(() => {
@@ -439,6 +445,9 @@ export function GameProvider({ children }) {
 
   const skipBootSequence = () => {
     setShowBootSequence(false);
+    try {
+      localStorage.setItem('xilla_boot_seen', 'true');
+    } catch (e) {}
     playBlip(600);
   };
 
