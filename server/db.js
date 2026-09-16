@@ -15,6 +15,12 @@ function getFilePath(filename) {
 
 // Identify active storage provider
 function getStorageConfig() {
+  const supabaseUrl = process.env.SUPABASE_URL;
+  const supabaseKey = process.env.SUPABASE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (supabaseUrl && supabaseKey) {
+    return { type: 'SUPABASE', url: supabaseUrl, key: supabaseKey };
+  }
+
   const kvUrl = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
   const kvToken = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
   
@@ -29,7 +35,134 @@ function getStorageConfig() {
   return { type: 'LOCAL_FILE' };
 }
 
-// Vercel KV / Upstash REST API: GET key
+// -------------------------------------------------------------
+// SUPABASE POSTGRESQL REST API INTEGRATION
+// -------------------------------------------------------------
+async function supabaseGetSubmissions() {
+  const cfg = getStorageConfig();
+  if (cfg.type !== 'SUPABASE') return null;
+
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/submissions?select=*&order=submitted_at.desc`, {
+      headers: {
+        apikey: cfg.key,
+        Authorization: `Bearer ${cfg.key}`,
+      },
+    });
+
+    if (res.ok) {
+      const rows = await res.json();
+      return rows.map((r) => ({
+        id: r.id,
+        handle: r.handle,
+        wallet: r.wallet,
+        xp: r.xp,
+        completedTasks: r.completed_tasks || [],
+        status: r.status || 'WL_QUALIFIED',
+        isRegistered: r.is_registered !== false,
+        submittedAt: r.submitted_at || r.created_at || new Date().toISOString(),
+      }));
+    }
+  } catch (err) {
+    console.warn('[Supabase getSubmissions error]', err.message);
+  }
+  return null;
+}
+
+async function supabaseSaveSubmissions(subs) {
+  const cfg = getStorageConfig();
+  if (cfg.type !== 'SUPABASE') return false;
+
+  try {
+    if (!Array.isArray(subs) || subs.length === 0) {
+      await fetch(`${cfg.url}/rest/v1/submissions?id=neq.none`, {
+        method: 'DELETE',
+        headers: {
+          apikey: cfg.key,
+          Authorization: `Bearer ${cfg.key}`,
+        },
+      });
+      return true;
+    }
+
+    const rows = subs.map((s) => ({
+      id: s.id,
+      handle: s.handle,
+      wallet: s.wallet,
+      xp: s.xp || 1400,
+      completed_tasks: s.completedTasks || [],
+      status: s.status || 'WL_QUALIFIED',
+      is_registered: s.isRegistered !== false,
+      submitted_at: s.submittedAt || new Date().toISOString(),
+    }));
+
+    const res = await fetch(`${cfg.url}/rest/v1/submissions`, {
+      method: 'POST',
+      headers: {
+        apikey: cfg.key,
+        Authorization: `Bearer ${cfg.key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify(rows),
+    });
+
+    return res.ok;
+  } catch (err) {
+    console.warn('[Supabase saveSubmissions error]', err.message);
+    return false;
+  }
+}
+
+async function supabaseGetStore(key, defaultValue) {
+  const cfg = getStorageConfig();
+  if (cfg.type !== 'SUPABASE') return null;
+
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/xilla_store?key=eq.${key}&select=*`, {
+      headers: {
+        apikey: cfg.key,
+        Authorization: `Bearer ${cfg.key}`,
+      },
+    });
+
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows && rows.length > 0 && rows[0].value !== undefined) {
+        return rows[0].value;
+      }
+    }
+  } catch (err) {
+    console.warn(`[Supabase getStore: ${key}]`, err.message);
+  }
+  return null;
+}
+
+async function supabaseSaveStore(key, value) {
+  const cfg = getStorageConfig();
+  if (cfg.type !== 'SUPABASE') return false;
+
+  try {
+    const res = await fetch(`${cfg.url}/rest/v1/xilla_store`, {
+      method: 'POST',
+      headers: {
+        apikey: cfg.key,
+        Authorization: `Bearer ${cfg.key}`,
+        'Content-Type': 'application/json',
+        Prefer: 'resolution=merge-duplicates',
+      },
+      body: JSON.stringify({ key, value, updated_at: new Date().toISOString() }),
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn(`[Supabase saveStore: ${key}]`, err.message);
+    return false;
+  }
+}
+
+// -------------------------------------------------------------
+// VERCEL KV / UPSTASH REDIS INTEGRATION
+// -------------------------------------------------------------
 async function kvGet(key) {
   const cfg = getStorageConfig();
   if (cfg.type !== 'VERCEL_KV') return null;
@@ -50,7 +183,6 @@ async function kvGet(key) {
   return null;
 }
 
-// Vercel KV / Upstash REST API: SET key
 async function kvSet(key, value) {
   const cfg = getStorageConfig();
   if (cfg.type !== 'VERCEL_KV') return false;
@@ -72,7 +204,9 @@ async function kvSet(key, value) {
   }
 }
 
-// Local Disk read helper
+// -------------------------------------------------------------
+// LOCAL DISK HELPERS
+// -------------------------------------------------------------
 function readFromDisk(filename, defaultValue) {
   try {
     const filePath = getFilePath(filename);
@@ -86,7 +220,6 @@ function readFromDisk(filename, defaultValue) {
   return defaultValue;
 }
 
-// Local Disk write helper (graceful on read-only environments)
 function writeToDisk(filename, data) {
   try {
     const filePath = getFilePath(filename);
@@ -97,18 +230,40 @@ function writeToDisk(filename, data) {
   }
 }
 
-// Unified Get
+// -------------------------------------------------------------
+// UNIFIED DATA ACCESSORS
+// -------------------------------------------------------------
 async function getStoredData(key, filename, defaultValue) {
   const storage = getStorageConfig();
 
-  // 1. If Vercel KV is configured, fetch live from KV
+  // 1. Supabase (Primary Cloud Database)
+  if (storage.type === 'SUPABASE') {
+    if (key === 'xilla_submissions') {
+      const supaSubs = await supabaseGetSubmissions();
+      if (supaSubs !== null) {
+        memoryStore.set(key, supaSubs);
+        return supaSubs;
+      }
+    } else {
+      const supaVal = await supabaseGetStore(key, defaultValue);
+      if (supaVal !== null) {
+        memoryStore.set(key, supaVal);
+        return supaVal;
+      }
+    }
+    // If table is fresh/empty, seed from disk
+    const diskSeed = readFromDisk(filename, defaultValue);
+    memoryStore.set(key, diskSeed);
+    return diskSeed;
+  }
+
+  // 2. Vercel KV / Upstash
   if (storage.type === 'VERCEL_KV') {
     const kvData = await kvGet(key);
     if (kvData !== null) {
       memoryStore.set(key, kvData);
       return kvData;
     }
-    // Seed initial data from bundled disk file if KV is fresh/empty
     const diskSeed = readFromDisk(filename, defaultValue);
     if (diskSeed !== defaultValue && (Array.isArray(diskSeed) ? diskSeed.length > 0 : Object.keys(diskSeed).length > 0)) {
       await kvSet(key, diskSeed);
@@ -117,27 +272,37 @@ async function getStoredData(key, filename, defaultValue) {
     return diskSeed;
   }
 
-  // 2. Local memory store cache
+  // 3. In-memory cache
   if (memoryStore.has(key)) {
     return memoryStore.get(key);
   }
 
-  // 3. Local disk read
+  // 4. Local disk fallback
   const diskData = readFromDisk(filename, defaultValue);
   memoryStore.set(key, diskData);
   return diskData;
 }
 
-// Unified Save
 async function saveStoredData(key, filename, data) {
   memoryStore.set(key, data);
 
   const storage = getStorageConfig();
 
+  // 1. Save to Supabase
+  if (storage.type === 'SUPABASE') {
+    if (key === 'xilla_submissions') {
+      await supabaseSaveSubmissions(data);
+    } else {
+      await supabaseSaveStore(key, data);
+    }
+  }
+
+  // 2. Save to Vercel KV
   if (storage.type === 'VERCEL_KV') {
     await kvSet(key, data);
   }
 
+  // 3. Save to local disk
   writeToDisk(filename, data);
   return true;
 }
@@ -157,11 +322,20 @@ export const db = {
 
   getStorageInfo: () => {
     const cfg = getStorageConfig();
+    if (cfg.type === 'SUPABASE') {
+      return {
+        persistent: true,
+        type: 'SUPABASE',
+        provider: 'Supabase (PostgreSQL Cloud DB)',
+        status: 'ONLINE',
+        note: 'All survivors are safely stored as atomic rows in your Supabase PostgreSQL database with live dashboard access.',
+      };
+    }
     if (cfg.type === 'VERCEL_KV') {
       return {
         persistent: true,
         type: 'VERCEL_KV',
-        provider: 'Vercel KV (Upstash Redis)',
+        provider: 'Vercel KV / Upstash Redis',
         status: 'ONLINE',
         note: 'All submissions, whitelist slots, and config are permanently stored in cloud KV database.',
       };
@@ -172,7 +346,7 @@ export const db = {
         type: 'EPHEMERAL_VERCEL',
         provider: 'Vercel Ephemeral RAM (Read-Only Disk)',
         status: 'NOT_PERSISTENT',
-        warning: 'CRITICAL: Running on Vercel without persistent KV storage! Submissions will not persist across serverless restarts. Connect Vercel KV in 1 click in your Vercel Dashboard under Storage tab.',
+        warning: 'CRITICAL: Running on Vercel without persistent database! Submissions will not persist across serverless restarts. Connect Supabase or Vercel KV.',
       };
     }
     return {
