@@ -11,18 +11,27 @@ export default function LeaderboardModal() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (isLeaderboardModalOpen) {
-      fetch('/api/leaderboard')
+    if (!isLeaderboardModalOpen) return;
+
+    const fetchBoard = () => {
+      fetch(`/api/leaderboard?t=${Date.now()}`, { cache: 'no-store' })
         .then(res => res.json())
         .then(data => {
-          setBoard(data);
+          if (Array.isArray(data)) {
+            setBoard(data);
+          }
           setLoading(false);
         })
         .catch(() => {
           setBoard([]);
           setLoading(false);
         });
-    }
+    };
+
+    fetchBoard();
+    // Live polling every 4 seconds
+    const interval = setInterval(fetchBoard, 4000);
+    return () => clearInterval(interval);
   }, [isLeaderboardModalOpen]);
 
   if (!isLeaderboardModalOpen) return null;

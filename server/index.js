@@ -70,6 +70,10 @@ async function backupToDiscord(handle, wallet, xp, status = 'WL_QUALIFIED') {
 
 // 1. Get Project Config & Real OpenSea Holder Counts (Live via OpenSea API)
 app.get('/api/config', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const cfg = await db.getConfig();
   const submissions = await db.getSubmissions();
   
@@ -194,6 +198,10 @@ app.post('/api/tasks/verify', async (req, res) => {
 
 // 4. Get Leaderboard (STRICTLY REAL DATA - NO MOCKS)
 app.get('/api/leaderboard', async (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
   const submissions = await db.getSubmissions();
   
   // Build rankings strictly from real registered survivors
@@ -206,11 +214,19 @@ app.get('/api/leaderboard', async (req, res) => {
       statusColor: s.xp >= 1500 ? '#FF5500' : s.xp >= 500 ? '#FFE600' : '#00F3FF',
       avatar: '/assets/characters/kaiju-king.png',
       wallet: s.wallet || null,
-      submittedAt: s.submittedAt,
+      submittedAt: s.submittedAt || s.submitted_at || null,
     }));
 
-  // Sort descending by XP
-  realSurvivors.sort((a, b) => b.xp - a.xp);
+  // Sort descending by XP, tie-break by submission timestamp (earliest submitted = rank 1)
+  realSurvivors.sort((a, b) => {
+    if (b.xp !== a.xp) {
+      return b.xp - a.xp; // Higher XP first
+    }
+    // When XP is identical, the earliest one who submitted gets the higher rank (Rank 1, 2, 3...)
+    const timeA = a.submittedAt ? new Date(a.submittedAt).getTime() : 0;
+    const timeB = b.submittedAt ? new Date(b.submittedAt).getTime() : 0;
+    return timeA - timeB; // Earliest timestamp first
+  });
   
   // Assign real ranks 1, 2, 3...
   const ranked = realSurvivors.map((item, idx) => ({ ...item, rank: idx + 1 }));

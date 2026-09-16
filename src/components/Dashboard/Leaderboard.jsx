@@ -10,10 +10,12 @@ export default function Leaderboard() {
   const [loading, setLoading] = useState(true);
 
   const fetchLeaderboard = () => {
-    fetch('/api/leaderboard')
+    fetch(`/api/leaderboard?t=${Date.now()}`, { cache: 'no-store' })
       .then((res) => res.json())
       .then((data) => {
-        setTopSurvivors(data.slice(0, 5));
+        if (Array.isArray(data)) {
+          setTopSurvivors(data.slice(0, 5));
+        }
         setLoading(false);
       })
       .catch(() => {
@@ -24,6 +26,9 @@ export default function Leaderboard() {
 
   useEffect(() => {
     fetchLeaderboard();
+    // Live polling every 4 seconds so rankings update immediately
+    const interval = setInterval(fetchLeaderboard, 4000);
+    return () => clearInterval(interval);
   }, [xp, completedTaskIds]);
 
   return (
@@ -35,6 +40,10 @@ export default function Leaderboard() {
           <h2 className="font-pixel text-xs sm:text-sm text-neon-yellow tracking-wider">
             SURVIVOR RANKINGS
           </h2>
+          <span className="flex items-center gap-1 font-pixel text-[8px] text-neon-green px-1.5 py-0.5 bg-neon-green/10 border border-neon-green/30">
+            <span className="w-1.5 h-1.5 rounded-full bg-neon-green animate-pulse" />
+            LIVE
+          </span>
         </div>
         <button
           onClick={() => { playBlip(500); setIsLeaderboardModalOpen(true); }}
