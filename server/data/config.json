@@ -15,10 +15,16 @@
       "chain": "Robinhood"
     },
     {
-      "name": "Miggles on Base",
+      "name": "Miggles",
       "url": "https://opensea.io/collection/miggles-on-base",
       "holders": 1777,
       "chain": "Base"
+    },
+    {
+      "name": "Internet Monks",
+      "url": "https://opensea.io/collection/internetmonkes",
+      "holders": 1068,
+      "chain": "Robinhood"
     }
   ],
   "links": {

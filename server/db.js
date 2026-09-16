@@ -240,7 +240,31 @@ async function getStoredData(key, filename, defaultValue) {
   if (storage.type === 'SUPABASE') {
     if (key === 'xilla_submissions') {
       const supaSubs = await supabaseGetSubmissions();
+      const diskSeed = readFromDisk(filename, defaultValue);
       if (supaSubs !== null) {
+        // If Supabase table is empty but disk has survivors, seed Supabase immediately
+        if (supaSubs.length === 0 && Array.isArray(diskSeed) && diskSeed.length > 0) {
+          console.log(`[Supabase Auto-Sync] Seeding ${diskSeed.length} baseline survivors from disk into Supabase...`);
+          await supabaseSaveSubmissions(diskSeed);
+          memoryStore.set(key, diskSeed);
+          return diskSeed;
+        }
+        // If Supabase has rows, check if any disk seed items are missing and sync them up
+        if (Array.isArray(supaSubs) && Array.isArray(diskSeed) && diskSeed.length > 0) {
+          const existingWallets = new Set(supaSubs.map(s => (s.wallet || '').toLowerCase()));
+          const existingHandles = new Set(supaSubs.map(s => (s.handle || '').toLowerCase()));
+          const missingFromDb = diskSeed.filter(s => 
+            !existingWallets.has((s.wallet || '').toLowerCase()) && 
+            !existingHandles.has((s.handle || '').toLowerCase())
+          );
+          if (missingFromDb.length > 0) {
+            console.log(`[Supabase Auto-Sync] Adding ${missingFromDb.length} missing survivors from seed into Supabase...`);
+            const merged = [...supaSubs, ...missingFromDb];
+            await supabaseSaveSubmissions(merged);
+            memoryStore.set(key, merged);
+            return merged;
+          }
+        }
         memoryStore.set(key, supaSubs);
         return supaSubs;
       }
@@ -251,7 +275,7 @@ async function getStoredData(key, filename, defaultValue) {
         return supaVal;
       }
     }
-    // If table is fresh/empty, seed from disk
+    // If table is fresh/empty or query failed, seed from disk
     const diskSeed = readFromDisk(filename, defaultValue);
     memoryStore.set(key, diskSeed);
     return diskSeed;

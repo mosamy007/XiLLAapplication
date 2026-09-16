@@ -74,15 +74,17 @@ app.get('/api/config', async (req, res) => {
   const submissions = await db.getSubmissions();
   
   // Query OpenSea Live Radar
-  let web3CatHolders = cfg.web3CatHolders || 1134;
-  let migglesHolders = cfg.migglesHolders || 1778;
-  let holderSpotsTaken = web3CatHolders + migglesHolders;
+  let web3CatHolders = cfg.web3CatHolders || 1059;
+  let migglesHolders = cfg.migglesHolders || 1777;
+  let internetMonkesHolders = cfg.internetMonkesHolders || 1068;
+  let holderSpotsTaken = web3CatHolders + migglesHolders + internetMonkesHolders;
 
   let collections = openseaService.MONITORED_COLLECTIONS;
   try {
     const liveStats = await openseaService.getLiveHolders();
     if (liveStats.web3CatHolders) web3CatHolders = liveStats.web3CatHolders;
     if (liveStats.migglesHolders) migglesHolders = liveStats.migglesHolders;
+    if (liveStats.internetMonkesHolders) internetMonkesHolders = liveStats.internetMonkesHolders;
     if (liveStats.holderSpotsTaken) holderSpotsTaken = liveStats.holderSpotsTaken;
     if (liveStats.collections) collections = liveStats.collections;
   } catch (err) {
@@ -108,6 +110,7 @@ app.get('/api/config', async (req, res) => {
     holderSpotsTaken,
     web3CatHolders,
     migglesHolders,
+    internetMonkesHolders,
     teamReservedSpots,
     totalReservedSpots,
     collections,

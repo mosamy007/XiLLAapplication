@@ -1,1 +1,98 @@
-[]
+[
+  {
+    "id": "sub_1726532001001",
+    "handle": "@athirahuaz",
+    "wallet": "0x0bf0c4980b438283c38e373692ff02175ae0f264",
+    "xp": 1400,
+    "completedTasks": [
+      "task_identity",
+      "task_wallet",
+      "task_follow",
+      "task_like_rt",
+      "task_reply"
+    ],
+    "status": "WL_QUALIFIED",
+    "isRegistered": true,
+    "submittedAt": "2026-09-16T21:40:00.000Z"
+  },
+  {
+    "id": "sub_1726532002002",
+    "handle": "@yukimam212",
+    "wallet": "0xb85157d7146565dae3dd2f04cdd7b86a57a884ef",
+    "xp": 1400,
+    "completedTasks": [
+      "task_identity",
+      "task_wallet",
+      "task_follow",
+      "task_like_rt",
+      "task_reply"
+    ],
+    "status": "WL_QUALIFIED",
+    "isRegistered": true,
+    "submittedAt": "2026-09-16T21:41:00.000Z"
+  },
+  {
+    "id": "sub_1726532003003",
+    "handle": "@Idontblameyou06",
+    "wallet": "0xd81c2c9b673398700012c8E579dfCEE52E62CC35",
+    "xp": 1400,
+    "completedTasks": [
+      "task_identity",
+      "task_wallet",
+      "task_follow",
+      "task_like_rt",
+      "task_reply"
+    ],
+    "status": "WL_QUALIFIED",
+    "isRegistered": true,
+    "submittedAt": "2026-09-16T21:42:00.000Z"
+  },
+  {
+    "id": "sub_1726532004004",
+    "handle": "@oxlunarzi",
+    "wallet": "0x244Ed38d16F8D02A6E67dEbc748e2b01329D06b9",
+    "xp": 1400,
+    "completedTasks": [
+      "task_identity",
+      "task_wallet",
+      "task_follow",
+      "task_like_rt",
+      "task_reply"
+    ],
+    "status": "WL_QUALIFIED",
+    "isRegistered": true,
+    "submittedAt": "2026-09-16T21:43:00.000Z"
+  },
+  {
+    "id": "sub_1726532005005",
+    "handle": "@glendenzell",
+    "wallet": "0x28E611976E4c91141C8Ce3Dc41129B9eE3380398",
+    "xp": 1400,
+    "completedTasks": [
+      "task_identity",
+      "task_wallet",
+      "task_follow",
+      "task_like_rt",
+      "task_reply"
+    ],
+    "status": "WL_QUALIFIED",
+    "isRegistered": true,
+    "submittedAt": "2026-09-16T21:44:00.000Z"
+  },
+  {
+    "id": "sub_1726532006006",
+    "handle": "@jinmoriyy",
+    "wallet": "0x1eb3984a4173672bd66f7f2b2660dfca5cece4e2",
+    "xp": 1400,
+    "completedTasks": [
+      "task_identity",
+      "task_wallet",
+      "task_follow",
+      "task_like_rt",
+      "task_reply"
+    ],
+    "status": "WL_QUALIFIED",
+    "isRegistered": true,
+    "submittedAt": "2026-09-16T21:45:00.000Z"
+  }
+]

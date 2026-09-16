@@ -4,7 +4,7 @@ import { useAudio } from '../context/AudioContext';
 import { Play, Shield, ExternalLink, Users } from 'lucide-react';
 
 export default function Hero({ onJoinClick }) {
-  const { spotsRemaining, totalSpots, holderSpotsTaken, teamReservedSpots: gameTeamSpots, registeredSurvivors, projectConfig, requireIdentity } = useGame();
+  const { registeredSurvivors, requireIdentity } = useGame();
   const { playLaser } = useAudio();
 
   const handleJoinWL = () => {
@@ -19,18 +19,7 @@ export default function Hero({ onJoinClick }) {
     }
   };
 
-  const total = totalSpots || 5333;
-  const teamReservedSpots = projectConfig?.teamReservedSpots !== undefined 
-    ? projectConfig.teamReservedSpots 
-    : (gameTeamSpots !== undefined ? gameTeamSpots : 300);
-  const remaining = spotsRemaining !== undefined ? spotsRemaining : 2121;
-  const spotsTaken = Math.min(total, total - remaining);
-  const percentageTaken = Math.min(100, Math.max(0, (spotsTaken / total) * 100));
   const survivorsCount = registeredSurvivors || 0;
-
-  const web3CatHolders = projectConfig?.web3CatHolders || 1134;
-  const migglesHolders = projectConfig?.migglesHolders || 1778;
-  const liveHolderSpots = holderSpotsTaken || (web3CatHolders + migglesHolders);
 
   return (
     <section 
@@ -92,7 +81,7 @@ export default function Hero({ onJoinClick }) {
         </div>
 
         {/* Live Registered Survivors Counter */}
-        <div className="mb-3 flex items-center gap-2 px-3.5 py-1.5 bg-cyber-black/90 border border-neon-green text-neon-green font-pixel text-[10px] sm:text-xs shadow-pixel-green backdrop-blur-sm">
+        <div className="mb-4 flex items-center gap-2 px-3.5 py-1.5 bg-cyber-black/90 border border-neon-green text-neon-green font-pixel text-[10px] sm:text-xs shadow-pixel-green backdrop-blur-sm">
           <Users className="w-3.5 h-3.5 text-neon-green animate-pulse" />
           <span>SURVIVORS:</span>
           <span className="text-white font-bold text-xs sm:text-sm bg-neon-green/25 px-2 py-0.5 border border-neon-green">
@@ -101,68 +90,60 @@ export default function Hero({ onJoinClick }) {
           <span className="font-tech text-[10px] text-gray-400 hidden sm:inline">REGISTERED</span>
         </div>
 
-        {/* WL Spots Remaining Progress Bar */}
-        <div className="w-full max-w-md sm:max-w-lg mb-4">
-          <div className="relative w-full h-5 sm:h-6 bg-cyber-black/90 border-2 border-neon-cyan p-0.5 shadow-pixel-dark backdrop-blur-sm">
-            <div
-              className="h-full bg-gradient-to-r from-neon-pink to-neon-pink/90 border-r-2 border-white transition-all duration-700 relative overflow-hidden"
-              style={{ width: `${percentageTaken}%` }}
+        {/* Auto GTD Collections Showcase */}
+        <div className="w-full max-w-2xl p-3 sm:p-3.5 bg-cyber-black/90 border-2 border-neon-yellow/70 backdrop-blur-md flex flex-wrap items-center justify-center gap-3 sm:gap-4 text-xs font-tech text-gray-200 shadow-pixel-yellow">
+          <div className="flex items-center gap-1.5 text-neon-yellow font-pixel text-[10px] sm:text-xs font-bold tracking-wider">
+            <Shield className="w-4 h-4 text-neon-yellow shrink-0 animate-pulse" />
+            <span>AUTO GTD:</span>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4">
+            <a
+              href="https://opensea.io/collection/web3-cat"
+              target="_blank"
+              rel="noreferrer"
+              title="Web3 Cats on OpenSea (Robinhood)"
+              className="group flex items-center gap-1.5 text-neon-cyan hover:text-neon-yellow transition-colors font-bold"
             >
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.4)_50%,transparent_100%)] animate-scanline" />
-            </div>
+              <span>Web3 Cats</span>
+              <span className="text-[8px] sm:text-[9px] text-gray-300 bg-cyber-dark px-1.5 py-0.5 border border-gray-700 font-pixel">Robinhood</span>
+              <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-neon-yellow" />
+            </a>
+
+            <span className="text-gray-600 font-bold">/</span>
+
+            <a
+              href="https://opensea.io/collection/miggles-on-base"
+              target="_blank"
+              rel="noreferrer"
+              title="Miggles on OpenSea (Base)"
+              className="group flex items-center gap-1.5 text-neon-cyan hover:text-neon-yellow transition-colors font-bold"
+            >
+              <span>Miggles</span>
+              <span className="text-[8px] sm:text-[9px] text-neon-cyan bg-neon-cyan/10 px-1.5 py-0.5 border border-neon-cyan/40 font-pixel">Base</span>
+              <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-neon-yellow" />
+            </a>
+
+            <span className="text-gray-600 font-bold">/</span>
+
+            <a
+              href="https://opensea.io/collection/internetmonkes"
+              target="_blank"
+              rel="noreferrer"
+              title="Internet Monks on OpenSea (Robinhood)"
+              className="group flex items-center gap-1.5 text-neon-cyan hover:text-neon-yellow transition-colors font-bold"
+            >
+              <span>Internet Monks</span>
+              <span className="text-[8px] sm:text-[9px] text-gray-300 bg-cyber-dark px-1.5 py-0.5 border border-gray-700 font-pixel">Robinhood</span>
+              <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-neon-yellow" />
+            </a>
           </div>
 
-          {/* Progress Text */}
-          <div className="flex items-center justify-between font-pixel text-[9px] sm:text-[11px] text-gray-100 mt-1.5 px-1 drop-shadow-[0_2px_4px_rgba(0,0,0,0.9)]">
-            <div className="flex items-center gap-1.5">
-              <span className={`font-bold ${remaining === 0 ? 'text-neon-yellow animate-pulse' : 'text-neon-pink'}`}>
-                {remaining === 0 ? '0 (CAP REACHED)' : remaining.toLocaleString()}
-              </span>
-              <span className="text-gray-400">/</span>
-              <span>{total.toLocaleString()} SPOTS REMAINING</span>
-            </div>
-            <span className="text-neon-cyan font-bold">{spotsTaken.toLocaleString()} / {total.toLocaleString()} ALLOCATED</span>
-          </div>
-        </div>
-
-        {/* Real OpenSea Live Holder Spots Badge */}
-        <div className="p-2 sm:p-2.5 bg-cyber-black/85 border-2 border-neon-cyan/50 backdrop-blur-md flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-[10px] sm:text-[11px] font-tech text-gray-200 shadow-pixel-dark">
-          <span className="flex items-center gap-1.5 text-neon-yellow font-bold">
-            <Shield className="w-3.5 h-3.5 text-neon-yellow shrink-0" />
-            <span>{liveHolderSpots.toLocaleString()} SPOTS TAKEN BY HOLDERS:</span>
-          </span>
-          <a
-            href="https://opensea.io/collection/web3-cat"
-            target="_blank"
-            rel="noreferrer"
-            title="Contract: 0xe1f0f12725cfecdeb2e9b07fc5b25906fc7597b3 (Robinhood)"
-            className="text-neon-cyan hover:underline flex items-center gap-1.5 font-bold"
-          >
-            <span>Web3 Cats</span>
-            <span className="text-[8px] sm:text-[9px] text-gray-300 bg-cyber-dark px-1 py-0.5 border border-gray-700 font-pixel">Robinhood</span>
-            <span className="text-white">({web3CatHolders.toLocaleString()})</span>
-            <ExternalLink className="w-2.5 h-2.5 text-gray-400" />
-          </a>
-          <span className="text-gray-600 font-bold">|</span>
-          <a
-            href="https://opensea.io/collection/miggles-on-base"
-            target="_blank"
-            rel="noreferrer"
-            title="Contract: 0x71cfbebb61a42d2e5ccff0831663cd58d2e442d9 (Base)"
-            className="text-neon-cyan hover:underline flex items-center gap-1.5 font-bold"
-          >
-            <span>Miggles</span>
-            <span className="text-[8px] sm:text-[9px] text-neon-cyan bg-neon-cyan/10 px-1 py-0.5 border border-neon-cyan/40 font-pixel">Base</span>
-            <span className="text-white">({migglesHolders.toLocaleString()})</span>
-            <ExternalLink className="w-2.5 h-2.5 text-gray-400" />
-          </a>
-          <span className="text-gray-600 font-bold">|</span>
-          <span className="flex items-center gap-1.5 text-neon-pink font-bold">
-            <span>TEAM ALLOCATION:</span>
-            <span className="text-white bg-neon-pink/20 px-1.5 py-0.5 border border-neon-pink/50 font-pixel text-[9px]">
-              {teamReservedSpots.toLocaleString()}
+          <div className="w-full sm:w-auto mt-1 sm:mt-0 flex justify-center">
+            <span className="text-neon-green font-pixel text-[9px] sm:text-[10px] px-2 py-0.5 bg-neon-green/15 border border-neon-green text-center">
+              HOLDERS ARE AUTO GTD
             </span>
-          </span>
+          </div>
         </div>
 
       </div>
