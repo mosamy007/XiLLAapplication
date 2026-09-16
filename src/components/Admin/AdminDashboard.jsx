@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import TaskManagerGUI from './TaskManagerGUI';
 import { 
   Shield, Download, RefreshCw, LogOut, ArrowLeft, Search, 
@@ -39,6 +39,19 @@ export default function AdminDashboard({ adminToken, onLogout }) {
   const [resetError, setResetError] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [resetSuccess, setResetSuccess] = useState('');
+
+  // Restore & Import State (Vercel Log Parser)
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importError, setImportError] = useState('');
+  const [importSuccess, setImportSuccess] = useState('');
+  const [isImporting, setIsImporting] = useState(false);
+
+  const detectedCount = useMemo(() => {
+    if (!importText) return 0;
+    const matches = importText.match(/(0x[a-fA-F0-9]{40})/gi);
+    return matches ? new Set(matches.map(m => m.toLowerCase())).size : 0;
+  }, [importText]);
 
   const fetchStats = async () => {
     try {
@@ -249,6 +262,45 @@ export default function AdminDashboard({ adminToken, onLogout }) {
     }
   };
 
+  const handleImportSurvivors = async (e) => {
+    e.preventDefault();
+    if (!importText.trim()) {
+      setImportError('Please paste your Vercel logs or survivor wallet list first.');
+      return;
+    }
+    setIsImporting(true);
+    setImportError('');
+    setImportSuccess('');
+
+    try {
+      const res = await fetch('/api/admin/submissions/import', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${adminToken}`,
+        },
+        body: JSON.stringify({ rawText: importText }),
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setImportSuccess(data.message);
+        fetchStats();
+        fetchSubmissions();
+        setTimeout(() => {
+          setIsImportModalOpen(false);
+          setImportText('');
+          setImportSuccess('');
+        }, 2200);
+      } else {
+        setImportError(data.error || 'Failed to import survivors.');
+      }
+    } catch (err) {
+      setImportError('Network error while importing.');
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     setCopiedWallet(text);
@@ -310,6 +362,20 @@ export default function AdminDashboard({ adminToken, onLogout }) {
             >
               <Download className="w-3.5 h-3.5" />
               <span>EXPORT WL TO CSV</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setImportError('');
+                setImportSuccess('');
+                setImportText('');
+                setIsImportModalOpen(true);
+              }}
+              className="pixel-btn bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-cyber-black text-[10px] py-2 px-3.5 flex items-center gap-1.5 shadow-pixel-cyan cursor-pointer transition-all"
+              title="Recover or import survivors from Vercel logs or raw wallet lists"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>RESTORE / IMPORT SURVIVORS</span>
             </button>
 
             <button
@@ -437,6 +503,41 @@ export default function AdminDashboard({ adminToken, onLogout }) {
         {/* Tab 2: Submissions & CSV View */}
         {activeTab === 'submissions' && (
           <div className="pixel-panel p-6 border-neon-pink space-y-4">
+            {/* Storage Persistence Diagnostic Banner */}
+            {stats.storageInfo && !stats.storageInfo.persistent && (
+              <div className="p-3 bg-danger-red/15 border-2 border-danger-red text-danger-red text-xs font-tech space-y-1.5">
+                <div className="flex items-center gap-2 font-bold font-pixel text-[10px] text-white">
+                  <AlertTriangle className="w-4 h-4 text-danger-red" />
+                  <span>ACTION REQUIRED: VERCEL SERVERLESS STORAGE IS EPHEMERAL</span>
+                </div>
+                <p className="text-gray-300 leading-relaxed">
+                  Submissions cannot be written to Vercel's read-only disk without a cloud database.
+                  <strong> Solution:</strong> In your <strong>Vercel Dashboard &rarr; Storage &rarr; Create Database &rarr; KV</strong> and connect it to this project (takes 30 seconds). All future submissions will automatically stay permanently saved!
+                </p>
+                <div className="pt-1 flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setImportError('');
+                      setImportSuccess('');
+                      setImportText('');
+                      setIsImportModalOpen(true);
+                    }}
+                    className="pixel-btn bg-neon-cyan/20 border border-neon-cyan text-neon-cyan hover:bg-neon-cyan hover:text-cyber-black text-[9px] py-1.5 px-3 flex items-center gap-1 cursor-pointer"
+                  >
+                    <Sparkles className="w-3 h-3" />
+                    <span>RESTORE MISSING SURVIVORS FROM VERCEL LOGS</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            {stats.storageInfo && stats.storageInfo.persistent && stats.storageInfo.type === 'VERCEL_KV' && (
+              <div className="p-2.5 bg-neon-green/10 border border-neon-green/40 text-neon-green text-xs font-tech flex items-center gap-2">
+                <Shield className="w-4 h-4 text-neon-green shrink-0" />
+                <span><strong>CLOUD STORAGE ACTIVE:</strong> {stats.storageInfo.provider} (Submissions permanently safe in cloud database).</span>
+              </div>
+            )}
+
             <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
               <div>
                 <h2 className="font-pixel text-sm text-neon-pink">WHITELIST SURVIVOR ALLOCATIONS</h2>
@@ -828,6 +929,101 @@ export default function AdminDashboard({ adminToken, onLogout }) {
                         <>
                           <Trash2 className="w-3.5 h-3.5" />
                           <span>CONFIRM PURGE</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Restore / Import Survivors Modal */}
+        {isImportModalOpen && (
+          <div className="fixed inset-0 z-[9999] bg-cyber-black/90 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="max-w-2xl w-full bg-cyber-dark border-2 border-neon-cyan p-6 shadow-[0_0_30px_rgba(0,243,255,0.25)] max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b-2 border-gray-800 pb-3 mb-4">
+                <div className="flex items-center gap-2.5 text-neon-cyan font-pixel text-xs sm:text-sm">
+                  <Sparkles className="w-4 h-4 text-neon-cyan" />
+                  <span>RESTORE SURVIVORS / VERCEL LOG IMPORTER</span>
+                </div>
+                <button
+                  onClick={() => setIsImportModalOpen(false)}
+                  className="text-gray-400 hover:text-white p-1 cursor-pointer"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Instructions */}
+              <div className="p-3 bg-cyber-panel border border-neon-cyan/40 text-xs font-tech text-gray-300 space-y-2 mb-4">
+                <p className="font-bold text-neon-cyan font-pixel text-[10px]">HOW TO PULL YOUR RECORDED SURVIVORS FROM VERCEL:</p>
+                <ol className="list-decimal list-inside space-y-1 text-gray-300 text-[11px]">
+                  <li>Open your <strong>Vercel Dashboard</strong> &rarr; Click your <strong>XiLLA</strong> project.</li>
+                  <li>Click the <strong>Logs</strong> (or <strong>Runtime Logs</strong>) tab at the top.</li>
+                  <li>In the search box, filter by: <code className="bg-cyber-black text-neon-cyan px-1 border border-gray-700">Registered participation</code> (or <code className="bg-cyber-black text-neon-cyan px-1 border border-gray-700">[XiLLA]</code>).</li>
+                  <li>Select & copy the log lines, then paste them below!</li>
+                </ol>
+                <p className="text-[11px] text-neon-yellow">
+                  💡 <em>Our smart parser will automatically extract every @handle, 0x... EVM wallet address, and XP value! You can also paste plain CSV lines like "@handle, 0xwallet".</em>
+                </p>
+              </div>
+
+              {importSuccess ? (
+                <div className="p-4 bg-neon-green/20 border-2 border-neon-green text-neon-green text-xs font-tech font-bold text-center animate-pulse">
+                  ✓ {importSuccess}
+                </div>
+              ) : (
+                <form onSubmit={handleImportSurvivors} className="space-y-4">
+                  <div>
+                    <div className="flex items-center justify-between mb-1.5">
+                      <label className="font-pixel text-[10px] text-gray-300 uppercase">
+                        Paste Vercel Logs or Survivor List:
+                      </label>
+                      {detectedCount > 0 && (
+                        <span className="font-pixel text-[10px] text-neon-green bg-neon-green/15 px-2 py-0.5 border border-neon-green">
+                          {detectedCount} WALLETS DETECTED
+                        </span>
+                      )}
+                    </div>
+                    <textarea
+                      rows={8}
+                      placeholder={`Example Vercel log lines:\n[XiLLA] Registered participation for @alpha_survivor with EVM wallet 0x71cfbebb61a42d2e5ccff0831663cd58d2e442d9 (XP: 1400)\n\nOr simply:\n@crypto_king, 0xe1f0f12725cfecdeb2e9b07fc5b25906fc7597b3\n0x71cfbebb61a42d2e5ccff0831663cd58d2e442d9 @cyber_kaiju`}
+                      value={importText}
+                      onChange={(e) => {
+                        setImportText(e.target.value);
+                        setImportError('');
+                      }}
+                      className="w-full bg-cyber-black text-white font-mono text-xs p-3 border-2 border-gray-700 focus:border-neon-cyan focus:outline-none"
+                    />
+                    {importError && (
+                      <p className="text-danger-red text-xs mt-1.5 font-tech font-bold flex items-center gap-1">
+                        <AlertTriangle className="w-3.5 h-3.5" />
+                        <span>{importError}</span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="flex items-center gap-3 pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsImportModalOpen(false)}
+                      className="flex-1 py-2.5 font-pixel text-[10px] text-gray-400 hover:text-white border border-gray-700 bg-cyber-black cursor-pointer"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isImporting || detectedCount === 0}
+                      className="flex-1 py-2.5 pixel-btn bg-neon-cyan border-2 border-neon-cyan text-cyber-black hover:bg-white font-pixel text-[10px] flex items-center justify-center gap-1.5 shadow-pixel-cyan cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isImporting ? (
+                        <span>RESTORING...</span>
+                      ) : (
+                        <>
+                          <Check className="w-3.5 h-3.5" />
+                          <span>RESTORE & SAVE SURVIVORS ({detectedCount})</span>
                         </>
                       )}
                     </button>

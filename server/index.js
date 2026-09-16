@@ -34,14 +34,44 @@ function adminAuth(req, res, next) {
   next();
 }
 
+// Helper: Instant Discord Webhook Live Backup for submissions
+async function backupToDiscord(handle, wallet, xp, status = 'WL_QUALIFIED') {
+  const webhookUrl = process.env.DISCORD_WEBHOOK_URL;
+  if (!webhookUrl) return;
+
+  try {
+    await fetch(webhookUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'XiLLA WL Central Command',
+        avatar_url: 'https://raw.githubusercontent.com/mosamy007/XiLLAapplication/main/public/assets/characters/kaiju-king.png',
+        embeds: [{
+          title: '🚨 NEW SURVIVOR WHITELISTED!',
+          color: 0x00f3ff,
+          fields: [
+            { name: 'X Handle', value: handle, inline: true },
+            { name: 'EVM Wallet', value: `\`${wallet}\``, inline: false },
+            { name: 'Total XP', value: `${xp} XP`, inline: true },
+            { name: 'Status', value: status, inline: true },
+          ],
+          timestamp: new Date().toISOString(),
+        }],
+      }),
+    });
+  } catch (err) {
+    console.warn('[XiLLA Discord Webhook Backup Error]:', err.message);
+  }
+}
+
 // ==========================================
 // PUBLIC API ROUTES
 // ==========================================
 
 // 1. Get Project Config & Real OpenSea Holder Counts (Live via OpenSea API)
 app.get('/api/config', async (req, res) => {
-  const cfg = db.getConfig();
-  const submissions = db.getSubmissions();
+  const cfg = await db.getConfig();
+  const submissions = await db.getSubmissions();
   
   // Query OpenSea Live Radar
   let web3CatHolders = cfg.web3CatHolders || 1134;
@@ -89,8 +119,8 @@ app.get('/api/config', async (req, res) => {
 });
 
 // 2. Get Public Active Tasks
-app.get('/api/tasks', (req, res) => {
-  const tasks = db.getTasks();
+app.get('/api/tasks', async (req, res) => {
+  const tasks = await db.getTasks();
   res.json(tasks.filter(t => t.active !== false));
 });
 
@@ -103,7 +133,7 @@ app.post('/api/tasks/verify', async (req, res) => {
   }
 
   const cleanHandle = handle.startsWith('@') ? handle : `@${handle}`;
-  const tasks = db.getTasks();
+  const tasks = await db.getTasks();
   const task = tasks.find(t => t.id === taskId);
   
   if (!task) {
@@ -116,7 +146,7 @@ app.post('/api/tasks/verify', async (req, res) => {
 
     if (verified) {
       // Record progress into submissions for the real leaderboard
-      const submissions = db.getSubmissions();
+      const submissions = await db.getSubmissions();
       let sub = submissions.find(s => s.handle.toLowerCase() === cleanHandle.toLowerCase());
 
       if (sub) {
@@ -137,7 +167,7 @@ app.post('/api/tasks/verify', async (req, res) => {
         submissions.push(sub);
       }
 
-      db.saveSubmissions(submissions);
+      await db.saveSubmissions(submissions);
 
       res.json({
         success: true,
@@ -160,8 +190,8 @@ app.post('/api/tasks/verify', async (req, res) => {
 });
 
 // 4. Get Leaderboard (STRICTLY REAL DATA - NO MOCKS)
-app.get('/api/leaderboard', (req, res) => {
-  const submissions = db.getSubmissions();
+app.get('/api/leaderboard', async (req, res) => {
+  const submissions = await db.getSubmissions();
   
   // Build rankings strictly from real registered survivors
   const realSurvivors = submissions
@@ -186,7 +216,7 @@ app.get('/api/leaderboard', (req, res) => {
 });
 
 // 5. Submit Wallet (Mandatory Final WL Step)
-app.post('/api/survivor/submit-wallet', (req, res) => {
+app.post('/api/survivor/submit-wallet', async (req, res) => {
   const { handle, wallet, xp, completedTasks } = req.body;
 
   if (!handle || !wallet) {
@@ -200,16 +230,17 @@ app.post('/api/survivor/submit-wallet', (req, res) => {
     return res.status(400).json({ error: 'Invalid wallet address provided.' });
   }
 
-  const submissions = db.getSubmissions();
+  const submissions = await db.getSubmissions();
   const existingIdx = submissions.findIndex(
     s => s.handle.toLowerCase() === cleanHandle.toLowerCase()
   );
 
+  const totalXP = xp || 500;
   const newEntry = {
     id: existingIdx >= 0 ? submissions[existingIdx].id : `sub_${Date.now()}`,
     handle: cleanHandle,
     wallet: cleanWallet,
-    xp: (xp || 500),
+    xp: totalXP,
     completedTasks: Array.from(new Set([...(completedTasks || []), 'task_wallet'])),
     status: 'WL_QUALIFIED',
     isRegistered: true,
@@ -222,7 +253,10 @@ app.post('/api/survivor/submit-wallet', (req, res) => {
     submissions.unshift(newEntry);
   }
 
-  db.saveSubmissions(submissions);
+  await db.saveSubmissions(submissions);
+
+  console.log(`[XiLLA] Registered participation for ${cleanHandle} with EVM wallet ${cleanWallet} (XP: ${totalXP})`);
+  backupToDiscord(cleanHandle, cleanWallet, totalXP, 'WL_QUALIFIED');
 
   res.json({
     success: true,
@@ -232,7 +266,7 @@ app.post('/api/survivor/submit-wallet', (req, res) => {
 });
 
 // 5b. Register Full Whitelist Participation (Requires all mandatory tasks)
-app.post('/api/survivor/register-participation', (req, res) => {
+app.post('/api/survivor/register-participation', async (req, res) => {
   const { handle, wallet, completedTasks } = req.body;
 
   if (!handle || !wallet) {
@@ -250,7 +284,7 @@ app.post('/api/survivor/register-participation', (req, res) => {
     });
   }
 
-  const tasks = db.getTasks();
+  const tasks = await db.getTasks();
   const mandatoryTasks = tasks.filter(t => t.isMandatory !== false);
   const mandatoryIds = mandatoryTasks.map(t => t.id);
 
@@ -266,7 +300,7 @@ app.post('/api/survivor/register-participation', (req, res) => {
     });
   }
 
-  const submissions = db.getSubmissions();
+  const submissions = await db.getSubmissions();
   const existingIdx = submissions.findIndex(
     s => s.handle.toLowerCase() === cleanHandle.toLowerCase()
   );
@@ -291,9 +325,10 @@ app.post('/api/survivor/register-participation', (req, res) => {
     submissions.unshift(newEntry);
   }
 
-  db.saveSubmissions(submissions);
+  await db.saveSubmissions(submissions);
 
   console.log(`[XiLLA] Registered participation for ${cleanHandle} with EVM wallet ${cleanWallet} (XP: ${totalXP})`);
+  backupToDiscord(cleanHandle, cleanWallet, totalXP, 'WL_QUALIFIED');
 
   res.json({
     success: true,
@@ -303,10 +338,10 @@ app.post('/api/survivor/register-participation', (req, res) => {
 });
 
 // 6. Get Survivor Profile By Handle (Isolated per X handle)
-app.get('/api/survivor/:handle', (req, res) => {
+app.get('/api/survivor/:handle', async (req, res) => {
   const { handle } = req.params;
   const cleanHandle = handle.startsWith('@') ? handle : `@${handle}`;
-  const submissions = db.getSubmissions();
+  const submissions = await db.getSubmissions();
   const found = submissions.find(
     s => s.handle.toLowerCase() === cleanHandle.toLowerCase()
   );
@@ -336,14 +371,14 @@ app.get('/api/survivor/:handle', (req, res) => {
 });
 
 // 7. Initialize / Register New Handle Profile
-app.post('/api/survivor/init', (req, res) => {
+app.post('/api/survivor/init', async (req, res) => {
   const { handle } = req.body;
   if (!handle) {
     return res.status(400).json({ error: 'Operative handle required.' });
   }
 
   const cleanHandle = handle.startsWith('@') ? handle : `@${handle}`;
-  const submissions = db.getSubmissions();
+  const submissions = await db.getSubmissions();
   let sub = submissions.find(s => s.handle.toLowerCase() === cleanHandle.toLowerCase());
 
   if (!sub) {
@@ -358,7 +393,7 @@ app.post('/api/survivor/init', (req, res) => {
       submittedAt: new Date().toISOString(),
     };
     submissions.push(sub);
-    db.saveSubmissions(submissions);
+    await db.saveSubmissions(submissions);
     console.log(`[XiLLA] Initialized brand new profile for ${cleanHandle}`);
   }
 
@@ -379,7 +414,7 @@ app.post('/api/admin/login', (req, res) => {
 });
 
 // Reset All Submissions & Leaderboard (Requires Admin Password)
-app.post('/api/admin/reset-all', (req, res) => {
+app.post('/api/admin/reset-all', async (req, res) => {
   const { password } = req.body;
   const authHeader = req.headers.authorization;
   const token = authHeader ? authHeader.replace('Bearer ', '').trim() : '';
@@ -392,10 +427,10 @@ app.post('/api/admin/reset-all', (req, res) => {
   }
 
   // 1. Wipe all submissions to start 100% clean
-  db.saveSubmissions([]);
+  await db.saveSubmissions([]);
 
   // 2. Reset config baseline to reserved spots (2,836 holder + 300 team = 3,136 reserved)
-  const cfg = db.getConfig();
+  const cfg = await db.getConfig();
   const resetCfg = {
     ...cfg,
     wlTotal: 5333,
@@ -405,7 +440,7 @@ app.post('/api/admin/reset-all', (req, res) => {
     teamReservedSpots: 300,
     wlRemaining: 2197,
   };
-  db.saveConfig(resetCfg);
+  await db.saveConfig(resetCfg);
 
   console.log('[XiLLA Admin] FACTORY RESET EXECUTED: All submissions purged. Baseline set to 2,836 reserved holder spots + 300 team spots.');
 
@@ -417,10 +452,10 @@ app.post('/api/admin/reset-all', (req, res) => {
 });
 
 app.get('/api/admin/stats', adminAuth, async (req, res) => {
-  const submissions = db.getSubmissions();
+  const submissions = await db.getSubmissions();
   // Filter strictly to submitted WL users
   const registeredSubs = submissions.filter(s => s.isRegistered === true || s.status === 'WL_QUALIFIED');
-  const tasks = db.getTasks();
+  const tasks = await db.getTasks();
   const totalXP = submissions.reduce((acc, s) => acc + (s.xp || 0), 0);
 
   let web3CatHolders = 1134;
@@ -434,9 +469,10 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     if (liveStats.holderSpotsTaken) holderSpotsTaken = liveStats.holderSpotsTaken;
   } catch (err) {}
 
-  const cfg = db.getConfig();
+  const cfg = await db.getConfig();
   const teamReservedSpots = cfg.teamReservedSpots !== undefined ? cfg.teamReservedSpots : 300;
   const totalReservedSpots = holderSpotsTaken + teamReservedSpots;
+  const storageInfo = db.getStorageInfo ? db.getStorageInfo() : { persistent: true, provider: 'Standard' };
   
   res.json({
     totalSubmissions: registeredSubs.length,
@@ -449,22 +485,23 @@ app.get('/api/admin/stats', adminAuth, async (req, res) => {
     holderSpotsTaken,
     teamReservedSpots,
     totalReservedSpots,
+    storageInfo,
     lastSubmission: registeredSubs[0] || null,
   });
 });
 
-app.get('/api/admin/tasks', adminAuth, (req, res) => {
-  res.json(db.getTasks());
+app.get('/api/admin/tasks', adminAuth, async (req, res) => {
+  res.json(await db.getTasks());
 });
 
-app.post('/api/admin/tasks', adminAuth, (req, res) => {
+app.post('/api/admin/tasks', adminAuth, async (req, res) => {
   const { title, subtitle, type, xp, url, targetHandle, icon, color, category, isMandatory } = req.body;
   
   if (!title || !xp) {
     return res.status(400).json({ error: 'Title and XP value are required.' });
   }
 
-  const tasks = db.getTasks();
+  const tasks = await db.getTasks();
   const newTask = {
     id: `task_${Date.now()}`,
     type: type || 'custom',
@@ -483,16 +520,16 @@ app.post('/api/admin/tasks', adminAuth, (req, res) => {
   };
 
   tasks.push(newTask);
-  db.saveTasks(tasks);
+  await db.saveTasks(tasks);
 
   res.json({ success: true, task: newTask });
 });
 
-app.put('/api/admin/tasks/:id', adminAuth, (req, res) => {
+app.put('/api/admin/tasks/:id', adminAuth, async (req, res) => {
   const { id } = req.params;
   const updates = req.body;
   
-  const tasks = db.getTasks();
+  const tasks = await db.getTasks();
   const idx = tasks.findIndex(t => t.id === id);
   
   if (idx === -1) {
@@ -500,29 +537,30 @@ app.put('/api/admin/tasks/:id', adminAuth, (req, res) => {
   }
 
   tasks[idx] = { ...tasks[idx], ...updates };
-  db.saveTasks(tasks);
+  await db.saveTasks(tasks);
 
   res.json({ success: true, task: tasks[idx] });
 });
 
-app.delete('/api/admin/tasks/:id', adminAuth, (req, res) => {
+app.delete('/api/admin/tasks/:id', adminAuth, async (req, res) => {
   const { id } = req.params;
-  let tasks = db.getTasks();
+  let tasks = await db.getTasks();
   
   if (id === 'task_identity' || id === 'task_wallet') {
     return res.status(400).json({ error: 'Core system task cannot be deleted.' });
   }
 
   tasks = tasks.filter(t => t.id !== id);
-  db.saveTasks(tasks);
+  await db.saveTasks(tasks);
 
   res.json({ success: true, message: 'Task deleted.' });
 });
 
-app.get('/api/admin/submissions', adminAuth, (req, res) => {
+app.get('/api/admin/submissions', adminAuth, async (req, res) => {
   const { search } = req.query;
+  const allSubs = await db.getSubmissions();
   // STRICT: Only record and display users who actually clicked the submit button!
-  let subs = db.getSubmissions().filter(s => s.isRegistered === true || s.status === 'WL_QUALIFIED');
+  let subs = allSubs.filter(s => s.isRegistered === true || s.status === 'WL_QUALIFIED');
   
   if (search) {
     const q = search.toLowerCase();
@@ -532,9 +570,88 @@ app.get('/api/admin/submissions', adminAuth, (req, res) => {
   res.json(subs);
 });
 
-app.get('/api/admin/export-csv', adminAuth, (req, res) => {
+// Import & Restore Survivors from Vercel Logs or Raw Text
+app.post('/api/admin/submissions/import', adminAuth, async (req, res) => {
+  const { rawText, entries } = req.body;
+  let toImport = [];
+
+  if (Array.isArray(entries)) {
+    toImport = entries;
+  } else if (typeof rawText === 'string') {
+    // Intelligent Log & Text Parser:
+    // Handles Vercel logs: "[XiLLA] Registered participation for @user with EVM wallet 0x123... (XP: 1400)"
+    // Handles CSV/plain lines: "@user, 0x123..." or "@user 0x123..." or "0x123... @user"
+    const lines = rawText.split('\n');
+    for (const line of lines) {
+      if (!line.trim()) continue;
+      const handleMatch = line.match(/@([a-zA-Z0-9_]{1,15})/);
+      const walletMatch = line.match(/(0x[a-fA-F0-9]{40})/i);
+      const xpMatch = line.match(/XP:?\s*(\d+)/i);
+
+      if (walletMatch) {
+        const handle = handleMatch ? handleMatch[0] : `@survivor_${walletMatch[0].slice(2, 8)}`;
+        const wallet = walletMatch[0];
+        const xp = xpMatch ? parseInt(xpMatch[1], 10) : 1400;
+        toImport.push({ handle, wallet, xp });
+      }
+    }
+  }
+
+  if (toImport.length === 0) {
+    return res.status(400).json({ error: 'No valid EVM wallets or survivor handles found in the pasted content.' });
+  }
+
+  const existing = await db.getSubmissions();
+  let addedCount = 0;
+  let updatedCount = 0;
+
+  for (const item of toImport) {
+    const cleanHandle = item.handle.startsWith('@') ? item.handle : `@${item.handle}`;
+    const cleanWallet = item.wallet.trim();
+
+    const idx = existing.findIndex(
+      s => s.handle.toLowerCase() === cleanHandle.toLowerCase() || 
+           (s.wallet && s.wallet.toLowerCase() === cleanWallet.toLowerCase())
+    );
+
+    const record = {
+      id: idx >= 0 ? existing[idx].id : `sub_restored_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`,
+      handle: cleanHandle,
+      wallet: cleanWallet,
+      xp: item.xp || 1400,
+      completedTasks: ['task_identity', 'task_wallet', 'task_follow', 'task_like_rt', 'task_reply'],
+      status: 'WL_QUALIFIED',
+      isRegistered: true,
+      submittedAt: idx >= 0 && existing[idx].submittedAt ? existing[idx].submittedAt : new Date().toISOString(),
+      restoredAt: new Date().toISOString(),
+    };
+
+    if (idx >= 0) {
+      existing[idx] = { ...existing[idx], ...record };
+      updatedCount++;
+    } else {
+      existing.unshift(record);
+      addedCount++;
+    }
+  }
+
+  await db.saveSubmissions(existing);
+
+  console.log(`[XiLLA Admin] Restored/Imported ${addedCount} new, ${updatedCount} updated survivors into database.`);
+
+  res.json({
+    success: true,
+    message: `Restored ${addedCount} new survivors (${updatedCount} updated). Total in DB: ${existing.length}`,
+    addedCount,
+    updatedCount,
+    totalSubmissions: existing.length,
+  });
+});
+
+app.get('/api/admin/export-csv', adminAuth, async (req, res) => {
   // STRICT: Only export users who actually clicked the submit button!
-  const subs = db.getSubmissions().filter(s => s.isRegistered === true || s.status === 'WL_QUALIFIED');
+  const allSubs = await db.getSubmissions();
+  const subs = allSubs.filter(s => s.isRegistered === true || s.status === 'WL_QUALIFIED');
   
   let csv = 'Index,X_Handle,Wallet_Address,XP,Status,Tasks_Completed,Timestamp\n';
   subs.forEach((s, idx) => {
@@ -548,38 +665,38 @@ app.get('/api/admin/export-csv', adminAuth, (req, res) => {
 });
 
 // Admin Configuration & Content Management Endpoints
-app.get('/api/admin/config', adminAuth, (req, res) => {
-  res.json(db.getConfig());
+app.get('/api/admin/config', adminAuth, async (req, res) => {
+  res.json(await db.getConfig());
 });
 
-app.post('/api/admin/config', adminAuth, (req, res) => {
-  const current = db.getConfig();
+app.post('/api/admin/config', adminAuth, async (req, res) => {
+  const current = await db.getConfig();
   const updated = { ...current, ...req.body };
-  db.saveConfig(updated);
+  await db.saveConfig(updated);
   res.json({ success: true, message: 'Configuration saved successfully.', config: updated });
 });
 
 // Update Stages (The Arrival)
-app.post('/api/admin/stages', adminAuth, (req, res) => {
+app.post('/api/admin/stages', adminAuth, async (req, res) => {
   const { stages } = req.body;
   if (!Array.isArray(stages)) {
     return res.status(400).json({ error: 'Stages must be an array.' });
   }
-  const current = db.getConfig();
+  const current = await db.getConfig();
   current.stages = stages;
-  db.saveConfig(current);
+  await db.saveConfig(current);
   res.json({ success: true, message: 'The Arrival stages updated successfully.', stages });
 });
 
 // Update Ecosystem & Social Links
-app.post('/api/admin/links', adminAuth, (req, res) => {
+app.post('/api/admin/links', adminAuth, async (req, res) => {
   const { links } = req.body;
   if (!links || typeof links !== 'object') {
     return res.status(400).json({ error: 'Links object is required.' });
   }
-  const current = db.getConfig();
+  const current = await db.getConfig();
   current.links = { ...(current.links || {}), ...links };
-  db.saveConfig(current);
+  await db.saveConfig(current);
   res.json({ success: true, message: 'Ecosystem links updated successfully.', links: current.links });
 });
 
