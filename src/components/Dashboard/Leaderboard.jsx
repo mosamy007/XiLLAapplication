@@ -7,6 +7,7 @@ export default function Leaderboard() {
   const { setIsLeaderboardModalOpen, handle, xp, completedTaskIds } = useGame();
   const { playBlip } = useAudio();
   const [topSurvivors, setTopSurvivors] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
   const fetchLeaderboard = () => {
@@ -14,7 +15,8 @@ export default function Leaderboard() {
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setTopSurvivors(data.slice(0, 5));
+          setTotalCount(data.length);
+          setTopSurvivors(data.slice(0, 10));
         }
         setLoading(false);
       })
@@ -49,13 +51,13 @@ export default function Leaderboard() {
           onClick={() => { playBlip(500); setIsLeaderboardModalOpen(true); }}
           className="font-pixel text-[9px] text-gray-400 hover:text-neon-cyan flex items-center gap-1 transition-colors cursor-pointer"
         >
-          <span>VIEW ALL</span>
+          <span>VIEW ALL {totalCount > 10 ? `(${totalCount})` : ''}</span>
           <ExternalLink className="w-2.5 h-2.5" />
         </button>
       </div>
 
       {/* Table - STRICTLY REAL DATA, ZERO MOCKS */}
-      <div className="w-full overflow-hidden border border-gray-800 bg-cyber-black/80 min-h-[140px] flex flex-col justify-center">
+      <div className="w-full overflow-hidden border border-gray-800 bg-cyber-black/80 min-h-[160px] max-h-[340px] overflow-y-auto">
         {loading ? (
           <div className="p-6 text-center text-xs font-tech text-gray-500 animate-pulse">
             LOADING REAL LEADERBOARD...
@@ -70,7 +72,7 @@ export default function Leaderboard() {
           </div>
         ) : (
           <table className="w-full text-left text-xs">
-            <thead className="bg-cyber-dark text-gray-400 font-pixel text-[8px] uppercase border-b border-gray-800">
+            <thead className="sticky top-0 z-10 bg-cyber-dark text-gray-400 font-pixel text-[8px] uppercase border-b border-gray-800">
               <tr>
                 <th className="py-1.5 px-2">#</th>
                 <th className="py-1.5 px-2">SURVIVOR</th>
