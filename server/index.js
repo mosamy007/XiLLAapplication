@@ -81,7 +81,8 @@ app.get('/api/config', async (req, res) => {
   let web3CatHolders = cfg.web3CatHolders || 1059;
   let migglesHolders = cfg.migglesHolders || 1777;
   let internetMonkesHolders = cfg.internetMonkesHolders || 1068;
-  let holderSpotsTaken = web3CatHolders + migglesHolders + internetMonkesHolders;
+  let bangerBotsHolders = cfg.bangerBotsHolders || 1851;
+  let holderSpotsTaken = web3CatHolders + migglesHolders + internetMonkesHolders + bangerBotsHolders;
 
   let collections = openseaService.MONITORED_COLLECTIONS;
   try {
@@ -89,6 +90,7 @@ app.get('/api/config', async (req, res) => {
     if (liveStats.web3CatHolders) web3CatHolders = liveStats.web3CatHolders;
     if (liveStats.migglesHolders) migglesHolders = liveStats.migglesHolders;
     if (liveStats.internetMonkesHolders) internetMonkesHolders = liveStats.internetMonkesHolders;
+    if (liveStats.bangerBotsHolders) bangerBotsHolders = liveStats.bangerBotsHolders;
     if (liveStats.holderSpotsTaken) holderSpotsTaken = liveStats.holderSpotsTaken;
     if (liveStats.collections) collections = liveStats.collections;
   } catch (err) {
@@ -101,7 +103,8 @@ app.get('/api/config', async (req, res) => {
   
   // Registered survivors: ONLY those who actually submitted their WL registration!
   const registeredSurvivors = submissions.filter(
-    s => s.isRegistered === true || s.status === 'WL_QUALIFIED'
+    s => Boolean(s.wallet && typeof s.wallet === 'string' && s.wallet.trim().length >= 20) &&
+         (s.isRegistered === true || s.status === 'WL_QUALIFIED')
   ).length;
 
   // Live spots taken: capped at total (5,333)
@@ -115,6 +118,7 @@ app.get('/api/config', async (req, res) => {
     web3CatHolders,
     migglesHolders,
     internetMonkesHolders,
+    bangerBotsHolders,
     teamReservedSpots,
     totalReservedSpots,
     collections,
@@ -204,9 +208,13 @@ app.get('/api/leaderboard', async (req, res) => {
 
   const submissions = await db.getSubmissions();
   
-  // Build rankings strictly from real registered survivors
+  // Build rankings strictly from real survivors who ACTUALLY submitted their wallet!
   const realSurvivors = submissions
-    .filter(s => s.xp && s.xp > 0)
+    .filter(s => 
+      s.xp && s.xp > 0 &&
+      Boolean(s.wallet && typeof s.wallet === 'string' && s.wallet.trim().length >= 20) &&
+      (s.isRegistered === true || s.status === 'WL_QUALIFIED')
+    )
     .map(s => ({
       handle: s.handle,
       xp: s.xp,

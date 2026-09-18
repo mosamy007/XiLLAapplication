@@ -137,6 +137,20 @@ export default function Hero({ onJoinClick }) {
               <span className="text-[8px] sm:text-[9px] text-gray-300 bg-cyber-dark px-1.5 py-0.5 border border-gray-700 font-pixel">Robinhood</span>
               <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-neon-yellow" />
             </a>
+
+            <span className="text-gray-600 font-bold">/</span>
+
+            <a
+              href="https://opensea.io/collection/banger-bots"
+              target="_blank"
+              rel="noreferrer"
+              title="Banger Bots on OpenSea (Ethereum)"
+              className="group flex items-center gap-1.5 text-neon-cyan hover:text-neon-yellow transition-colors font-bold"
+            >
+              <span>Banger Bots</span>
+              <span className="text-[8px] sm:text-[9px] text-neon-pink bg-neon-pink/10 px-1.5 py-0.5 border border-neon-pink/40 font-pixel">Ethereum</span>
+              <ExternalLink className="w-3 h-3 text-gray-400 group-hover:text-neon-yellow" />
+            </a>
           </div>
 
           <div className="w-full sm:w-auto mt-1 sm:mt-0 flex justify-center">

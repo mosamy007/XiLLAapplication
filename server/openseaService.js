@@ -23,6 +23,13 @@ export const MONITORED_COLLECTIONS = {
     contract: '0x315c62f3a56dc2f581cc09096a5b438f3171cacb',
     openSeaUrl: 'https://opensea.io/collection/internetmonkes',
   },
+  bangerBots: {
+    name: 'Banger Bots',
+    slug: 'banger-bots',
+    chain: 'Ethereum',
+    contract: '0x50bffe9e65281a9ca84b114222f5788b658c825f',
+    openSeaUrl: 'https://opensea.io/collection/banger-bots',
+  },
 };
 
 // Baseline fallback in case OpenSea API is temporarily unreachable or key not provided
@@ -30,7 +37,8 @@ let cachedHolders = {
   web3CatHolders: 1059,
   migglesHolders: 1777,
   internetMonkesHolders: 1068,
-  holderSpotsTaken: 3904,
+  bangerBotsHolders: 1851,
+  holderSpotsTaken: 5755,
   lastUpdated: null,
 };
 
@@ -82,15 +90,20 @@ export async function getLiveHolders() {
           ...MONITORED_COLLECTIONS.internetMonkes,
           holders: cachedHolders.internetMonkesHolders,
         },
+        bangerBots: {
+          ...MONITORED_COLLECTIONS.bangerBots,
+          holders: cachedHolders.bangerBotsHolders,
+        },
       },
     };
   }
 
   // Fetch live stats in parallel
-  const [web3CatCount, migglesCount, internetMonkesCount] = await Promise.all([
+  const [web3CatCount, migglesCount, internetMonkesCount, bangerBotsCount] = await Promise.all([
     fetchStatsForCollection(MONITORED_COLLECTIONS.web3Cat.slug),
     fetchStatsForCollection(MONITORED_COLLECTIONS.miggles.slug),
     fetchStatsForCollection(MONITORED_COLLECTIONS.internetMonkes.slug),
+    fetchStatsForCollection(MONITORED_COLLECTIONS.bangerBots.slug),
   ]);
 
   if (web3CatCount !== null) {
@@ -102,12 +115,15 @@ export async function getLiveHolders() {
   if (internetMonkesCount !== null) {
     cachedHolders.internetMonkesHolders = internetMonkesCount;
   }
+  if (bangerBotsCount !== null) {
+    cachedHolders.bangerBotsHolders = bangerBotsCount;
+  }
 
-  cachedHolders.holderSpotsTaken = cachedHolders.web3CatHolders + cachedHolders.migglesHolders + cachedHolders.internetMonkesHolders;
+  cachedHolders.holderSpotsTaken = cachedHolders.web3CatHolders + cachedHolders.migglesHolders + cachedHolders.internetMonkesHolders + cachedHolders.bangerBotsHolders;
   cachedHolders.lastUpdated = new Date().toISOString();
   lastFetchTime = now;
 
-  console.log(`[OpenSea Live Radar] Web3 Cats (${MONITORED_COLLECTIONS.web3Cat.chain}): ${cachedHolders.web3CatHolders} | Miggles (${MONITORED_COLLECTIONS.miggles.chain}): ${cachedHolders.migglesHolders} | Internet Monks (${MONITORED_COLLECTIONS.internetMonkes.chain}): ${cachedHolders.internetMonkesHolders}`);
+  console.log(`[OpenSea Live Radar] Web3 Cats (${MONITORED_COLLECTIONS.web3Cat.chain}): ${cachedHolders.web3CatHolders} | Miggles (${MONITORED_COLLECTIONS.miggles.chain}): ${cachedHolders.migglesHolders} | Internet Monks (${MONITORED_COLLECTIONS.internetMonkes.chain}): ${cachedHolders.internetMonkesHolders} | Banger Bots (${MONITORED_COLLECTIONS.bangerBots.chain}): ${cachedHolders.bangerBotsHolders}`);
 
   return {
     ...cachedHolders,
@@ -123,6 +139,10 @@ export async function getLiveHolders() {
       internetMonkes: {
         ...MONITORED_COLLECTIONS.internetMonkes,
         holders: cachedHolders.internetMonkesHolders,
+      },
+      bangerBots: {
+        ...MONITORED_COLLECTIONS.bangerBots,
+        holders: cachedHolders.bangerBotsHolders,
       },
     },
   };

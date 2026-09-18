@@ -25,6 +25,12 @@
       "url": "https://opensea.io/collection/internetmonkes",
       "holders": 1068,
       "chain": "Robinhood"
+    },
+    {
+      "name": "Banger Bots",
+      "url": "https://opensea.io/collection/banger-bots",
+      "holders": 1851,
+      "chain": "Ethereum"
     }
   ],
   "links": {
